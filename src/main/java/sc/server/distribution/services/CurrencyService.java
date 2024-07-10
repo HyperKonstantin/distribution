@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import sc.server.distribution.entities.Currency;
 import sc.server.distribution.repositories.CurrencyRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -18,6 +19,10 @@ public class CurrencyService {
 
     @Autowired
     private CurrencyRepository currencyRepository;
+
+    private List<String> ProcessedCurrency = new ArrayList<>();
+
+
 
     @SneakyThrows
     public ResponseEntity<?> getAllCurrencies() {

@@ -4,8 +4,11 @@ server:
 spring:
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: 192.168.246.124:9092
 
   data:
     mongodb:
       database: DistributionDatabase
+
+values:
+  server-id: 0
