@@ -1,0 +1,16 @@
+.idea/**/*.*
+**/*.iml
+**/*.log
+.settings/*
+.project/*
+**/target/*
+**/out/*
+**/generated/*
+**/generated-sources/*
+**/*.bak
+/target/
+/.classpath
+/.project
+/.settings/
+/.factorypath
+/.checkstyle
