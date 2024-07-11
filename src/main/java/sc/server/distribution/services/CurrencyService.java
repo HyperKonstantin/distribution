@@ -1,6 +1,7 @@
 package sc.server.distribution.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +21,8 @@ public class CurrencyService {
     @Autowired
     private CurrencyRepository currencyRepository;
 
-    private List<String> ProcessedCurrency = new ArrayList<>();
-
-
+    @Getter
+    private List<Currency> processedCurrency = new ArrayList<>();
 
     @SneakyThrows
     public ResponseEntity<?> getAllCurrencies() {
@@ -30,4 +30,21 @@ public class CurrencyService {
         log.info("currency list size: {}", currencyNames.size());
         return new ResponseEntity<>((new ObjectMapper()).writeValueAsString(currencyNames), HttpStatus.OK);
     }
+
+    public void processAllCurrencies(){
+        log.info("1 server process all currencies!");
+        processedCurrency.clear();
+        processedCurrency.addAll(currencyRepository.findAll());
+    }
+
+    @SneakyThrows
+    public  ResponseEntity<?> getProcessedCurrencies(){
+        List<String> processedCurrenciesNames = processedCurrency.stream().map(Currency::getName).toList();
+        return new ResponseEntity<>((new ObjectMapper()).writeValueAsString(processedCurrenciesNames), HttpStatus.OK);
+    }
+
+    public void removeCurrency(String currencyName){
+        processedCurrency.removeIf(currency -> currency.getName().equals(currencyName));
+    }
+
 }

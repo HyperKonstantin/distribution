@@ -19,4 +19,9 @@ public class CurrencyController {
         return currencyService.getAllCurrencies();
     }
 
+    @GetMapping("/processed")
+    public ResponseEntity<?> processedCurrencies(){
+        return currencyService.getProcessedCurrencies();
+    }
+
 }

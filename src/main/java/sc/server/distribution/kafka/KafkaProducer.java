@@ -1,16 +1,31 @@
 package sc.server.distribution.kafka;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import sc.server.distribution.entities.Currency;
 
 @Service
 public class KafkaProducer {
 
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
+    public final String serverId;
+
+    public KafkaProducer(KafkaTemplate<String, String> kafkaTemplate, Environment environment){
+        this.kafkaTemplate = kafkaTemplate;
+        serverId = environment.getProperty("values.server-id");
+    }
 
     public void healthCheck(){
-        //kafkaTemplate.send()
+        kafkaTemplate.send("core-balancer", "ping " + serverId);
+    }
+
+    public void getCurrencyQuery(){
+        kafkaTemplate.send("core-balancer", "query " + serverId);
+    }
+
+    public void offerCurrency(Currency currency, String consumerId){
+        kafkaTemplate.send("core-balancer", "offer " + serverId + " " + consumerId + " " + currency.getName());
     }
 }
