@@ -1,10 +1,14 @@
 server:
-  port : 8083
+  port : 8082
 
 spring:
 
   kafka:
+
     bootstrap-servers: 192.168.246.124:9092
+    consumer:
+      auto-offset-reset: latest
+
 
 values:
   server-id: 0

@@ -21,7 +21,7 @@ public class KafkaProducer {
         kafkaTemplate.send("core-balancer", "ping " + serverId);
     }
 
-    public void getCurrencyQuery(){
+    public void currencyQuery(){
         kafkaTemplate.send("core-balancer", "query " + serverId);
     }
 

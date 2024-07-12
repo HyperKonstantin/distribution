@@ -5,6 +5,7 @@ import sc.server.distribution.entities.Currency;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class CurrencyRepository {
@@ -24,6 +25,10 @@ public class CurrencyRepository {
     }
     public List<Currency> findAll(){
         return currencies;
+    }
+
+    public Optional<Currency> findByName(String name){
+        return currencies.stream().filter(currency -> currency.getName().equals(name)).findFirst();
     }
 
 }

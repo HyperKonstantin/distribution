@@ -32,7 +32,6 @@ public class CurrencyService {
     }
 
     public void processAllCurrencies(){
-        log.info("1 server process all currencies!");
         processedCurrency.clear();
         processedCurrency.addAll(currencyRepository.findAll());
     }
@@ -44,7 +43,13 @@ public class CurrencyService {
     }
 
     public void removeCurrency(String currencyName){
-        processedCurrency.removeIf(currency -> currency.getName().equals(currencyName));
+        Currency currency = currencyRepository.findByName(currencyName).get();
+        boolean isRemoved = processedCurrency.remove(currency);
+        assert isRemoved : "ошибка при удалении валюты";
     }
 
+    public void addCurrency(String currencyName){
+        Currency currency = currencyRepository.findByName(currencyName).get();
+        processedCurrency.add(currency);
+    }
 }

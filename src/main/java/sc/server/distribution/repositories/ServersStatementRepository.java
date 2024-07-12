@@ -1,22 +1,30 @@
 package sc.server.distribution.repositories;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-import sc.server.distribution.services.DistributionService;
+import sc.server.distribution.kafka.KafkaProducer;
+import sc.server.distribution.services.CurrencyService;
+import sc.server.distribution.services.OfferManagementService;
 
 import java.util.HashMap;
 
 @Repository
 @Slf4j
+@RequiredArgsConstructor
 public class ServersStatementRepository {
 
     private final int PING_COUNT_TO_CONFIRM = 5;
 
-    @Autowired
-    private DistributionService distributionService;
+    private final CurrencyService currencyService;
+    private final CurrencyRepository currencyRepository;
+    private final OfferManagementService offerManagementService;
+    private final KafkaProducer kafkaProducer;
 
-    private int serversCount = 0;
+    @Getter
+    private int serverCount;
     private HashMap<String, Integer> aliveServersPingCount = new HashMap<>();
 
     public void addServer(String pingMessage){
@@ -31,16 +39,47 @@ public class ServersStatementRepository {
         log.info(aliveServersPingCount.toString());
 
         if (aliveServersPingCount.values().stream().anyMatch(value -> value >= PING_COUNT_TO_CONFIRM)){
+//            serverCount = aliveServersPingCount.size();
+//            log.info("Servers count: {}, processed: {}", serverCount, currencyService.getProcessedCurrency().size());
+//
+//            if (serverCount == 1){
+//                log.info("({}) server process all currencies!", kafkaProducer.serverId);
+//                currencyService.processAllCurrencies();
+//            }
+//            else if (isLackOfCurrency()){
+//                log.info("send offer");
+//
+//                offerManagementService.offerRequest();
+//            }
+
             log.info("Servers count: {}", aliveServersPingCount.size());
 
-            if (aliveServersPingCount.size() > serversCount){
-                serversCount = aliveServersPingCount.size();
-                log.info("New server! Count: {}", serversCount);
-                distributionService.distributeWithIncreasingServerCount(serversCount);
-
+            if (aliveServersPingCount.size() > serverCount) {
+                serverCount = aliveServersPingCount.size();
+                log.info("New server! Count: {}", serverCount);
+                if (serverCount == 1){
+                    log.info("({}) server process all currencies!", kafkaProducer.serverId);
+                    currencyService.processAllCurrencies();
+                }
+                if (isLackOfCurrency()) {
+                    log.info("send offer");
+                    offerManagementService.offerRequest();
+                }
             }
 
             aliveServersPingCount.clear();
         }
+    }
+
+    public boolean isLackOfCurrency(){
+        return currencyService.getProcessedCurrency().size() < currencyPerServer();
+    }
+
+    public boolean isExcessOfCurrency(){
+        return currencyService.getProcessedCurrency().size() > currencyPerServer();
+    }
+
+    public int currencyPerServer(){
+        return currencyRepository.findAll().size() / serverCount;
     }
 }

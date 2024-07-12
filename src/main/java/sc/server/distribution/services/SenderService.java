@@ -11,7 +11,7 @@ public class SenderService {
     @Autowired
     private KafkaProducer kafkaProducer;
 
-    @Scheduled(initialDelay = 5_000, fixedRate = 3_000)
+    @Scheduled(fixedDelay = 3_000)
     public void healthCheck(){
         kafkaProducer.healthCheck();
     }
