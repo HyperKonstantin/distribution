@@ -21,7 +21,8 @@ public class KafkaConsumer {
             serversStatementRepository.addServer(message);
         }
         else if (message.contains("query") && serversStatementRepository.isExcessOfCurrency()){
-            offerManagementService.answerOnQueryFrom(message.split(" ")[1]);
+            String querySentServerId = message.split(" ")[1];
+            offerManagementService.sendOfferOnQueryFrom(querySentServerId);
         }
         else if (message.contains("offer")){
             offerManagementService.confirmOffer(message);

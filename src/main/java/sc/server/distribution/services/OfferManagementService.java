@@ -19,6 +19,11 @@ public class OfferManagementService {
     private OfferStatus offerStatus = OfferStatus.none;
 
     public void offerRequest() {
+//        if (offerStatus == OfferStatus.waited){
+//            log.warn("({}) query is already sent", kafkaProducer.serverId);
+//            return;
+//        }
+        log.info("send query");
         kafkaProducer.currencyQuery();
         offerStatus = OfferStatus.waited;
     }
@@ -27,37 +32,39 @@ public class OfferManagementService {
         sent, none, waited
     }
 
-    public void answerOnQueryFrom(String serverId) {
+    public void sendOfferOnQueryFrom(String serverId) {
+        if (offerStatus == OfferStatus.sent){
+            log.info("({}) Server is already sent offer", kafkaProducer.serverId);
+            return;
+        }
+
         List<Currency> processedCurrency = currencyService.getProcessedCurrency();
-        log.info("({}) answer on query, pc: {}",kafkaProducer.serverId, processedCurrency.size());
+        Currency offeredCurrency = processedCurrency.get(0);
 
-        sendOffer(processedCurrency.get(0), serverId);
-    }
+        log.info("({}) send offer to {} on {}, pc: {}", kafkaProducer.serverId, serverId, offeredCurrency.getName(), processedCurrency.size());
 
-    public void sendOffer(Currency currency, String consumerId) {
-        log.info("({}) send offer to {} on {}", kafkaProducer.serverId, consumerId, currency.getName());
-        kafkaProducer.offerCurrency(currency, consumerId);
+        kafkaProducer.offerCurrency(offeredCurrency, serverId);
         offerStatus = OfferStatus.sent;
     }
 
     public void confirmOffer(String message) {
         
         if (isOfferAnswered(message)){
-            log.info("({}) offer was answered by {}", kafkaProducer.serverId, OfferSender(message));
+            log.info("({}) query was answered by {}", kafkaProducer.serverId, OfferSender(message));
             currencyService.addCurrency(currencyName(message));
             offerStatus = OfferStatus.none;
 
         }
-         if (isOfferFailured(message)){
-             log.info("({}) offer was intercepted", kafkaProducer.serverId);
-             offerStatus = OfferStatus.none;
-         }
+        else if (isOfferFailured(message)){
+         log.info("({}) offer was intercepted", kafkaProducer.serverId);
+         offerStatus = OfferStatus.none;
+        }
          
-         else if (isOfferSucceed(message)) {
-             log.info("({}) offer was confirmed", kafkaProducer.serverId);
-             currencyService.removeCurrency(currencyName(message));
-             offerStatus = OfferStatus.none;
-         }
+        else if (isOfferSucceed(message)) {
+         log.info("({}) offer was confirmed", kafkaProducer.serverId);
+         currencyService.removeCurrency(currencyName(message));
+         offerStatus = OfferStatus.none;
+        }
     }
 
     private boolean isOfferSucceed(String message){
@@ -65,7 +72,7 @@ public class OfferManagementService {
     }
 
     private boolean isOfferFailured(String message){
-        return !OfferSender(message).equals(kafkaProducer.serverId);
+        return !OfferSender(message).equals(kafkaProducer.serverId) && offerStatus == OfferStatus.sent;
     }
 
     private boolean isOfferAnswered(String message){

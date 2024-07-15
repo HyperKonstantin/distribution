@@ -19,20 +19,6 @@ public class KafkaConfiguration {
 
     @Bean
     public NewTopic newTopic(){
-        return new NewTopic("core-balancer", 1, (short) 1);
-    }
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-
-    @Bean //TODO maybe not useful
-    public ConsumerFactory<String, String> consumerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                bootstrapServers);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        return new DefaultKafkaConsumerFactory<>(props);
+        return new NewTopic("core-balancer", 4, (short) 1);
     }
 }

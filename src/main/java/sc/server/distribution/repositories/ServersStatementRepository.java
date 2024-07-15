@@ -39,32 +39,19 @@ public class ServersStatementRepository {
         log.info(aliveServersPingCount.toString());
 
         if (aliveServersPingCount.values().stream().anyMatch(value -> value >= PING_COUNT_TO_CONFIRM)){
-//            serverCount = aliveServersPingCount.size();
-//            log.info("Servers count: {}, processed: {}", serverCount, currencyService.getProcessedCurrency().size());
-//
-//            if (serverCount == 1){
-//                log.info("({}) server process all currencies!", kafkaProducer.serverId);
-//                currencyService.processAllCurrencies();
-//            }
-//            else if (isLackOfCurrency()){
-//                log.info("send offer");
-//
-//                offerManagementService.offerRequest();
-//            }
-
             log.info("Servers count: {}", aliveServersPingCount.size());
 
-            if (aliveServersPingCount.size() > serverCount) {
+            if (aliveServersPingCount.size() != serverCount) {
                 serverCount = aliveServersPingCount.size();
                 log.info("New server! Count: {}", serverCount);
-                if (serverCount == 1){
+                if (serverCount == 1 && kafkaProducer.serverId.equals("1")){
                     log.info("({}) server process all currencies!", kafkaProducer.serverId);
                     currencyService.processAllCurrencies();
                 }
-                if (isLackOfCurrency()) {
-                    log.info("send offer");
-                    offerManagementService.offerRequest();
-                }
+            }
+
+            if (isLackOfCurrency()) {
+                offerManagementService.offerRequest();
             }
 
             aliveServersPingCount.clear();
