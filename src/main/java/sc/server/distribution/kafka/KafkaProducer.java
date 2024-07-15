@@ -1,6 +1,9 @@
 package sc.server.distribution.kafka;
 
-import org.springframework.core.env.Environment;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import sc.server.distribution.entities.Currency;
@@ -8,24 +11,33 @@ import sc.server.distribution.entities.Currency;
 @Service
 public class KafkaProducer {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
 
-    public final String serverId;
+    @Getter
+    @Setter
+    @Value("${values.server-id}")
+    private String serverId;
+    private final String TOPIC = "core-balancer";
 
-    public KafkaProducer(KafkaTemplate<String, String> kafkaTemplate, Environment environment){
-        this.kafkaTemplate = kafkaTemplate;
-        serverId = environment.getProperty("values.server-id");
-    }
 
     public void healthCheck(){
-        kafkaTemplate.send("core-balancer", "ping " + serverId);
+        kafkaTemplate.send(TOPIC, "ping " + serverId);
     }
 
     public void currencyQuery(){
-        kafkaTemplate.send("core-balancer", "query " + serverId);
+        kafkaTemplate.send(TOPIC, "query " + serverId);
     }
 
     public void offerCurrency(Currency currency, String consumerId){
-        kafkaTemplate.send("core-balancer", "offer " + serverId + " " + consumerId + " " + currency.getName());
+        kafkaTemplate.send(TOPIC, "offer " + serverId + " " + consumerId + " " + currency.getName());
+    }
+
+    public void sendState(String allCurrencyString) {
+        kafkaTemplate.send(TOPIC, "state " + serverId + " " + allCurrencyString);
+    }
+
+    public void takeRequest(String currencyName) {
+        kafkaTemplate.send(TOPIC, "take " + serverId + " " + currencyName);
     }
 }

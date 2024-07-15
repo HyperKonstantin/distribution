@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import sc.server.distribution.repositories.ServersStatementRepository;
 import sc.server.distribution.services.OfferManagementService;
+import sc.server.distribution.services.RemovalDistributionService;
 
 @Service
 @RequiredArgsConstructor
@@ -14,6 +15,7 @@ public class KafkaConsumer {
 
     private final ServersStatementRepository serversStatementRepository;
     private final OfferManagementService offerManagementService;
+    private final RemovalDistributionService removalDistributionService;
 
     @KafkaHandler
     public void listen(String message){
@@ -26,6 +28,12 @@ public class KafkaConsumer {
         }
         else if (message.contains("offer")){
             offerManagementService.confirmOffer(message);
+        }
+        else if (message.contains("state")){
+            removalDistributionService.processState(message);
+        }
+        else if (message.contains("take")){
+            //TODO end here
         }
     }
 }

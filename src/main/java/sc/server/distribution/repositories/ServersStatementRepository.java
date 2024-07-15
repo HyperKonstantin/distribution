@@ -3,11 +3,11 @@ package sc.server.distribution.repositories;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import sc.server.distribution.kafka.KafkaProducer;
 import sc.server.distribution.services.CurrencyService;
 import sc.server.distribution.services.OfferManagementService;
+import sc.server.distribution.services.RemovalDistributionService;
 
 import java.util.HashMap;
 
@@ -22,6 +22,7 @@ public class ServersStatementRepository {
     private final CurrencyRepository currencyRepository;
     private final OfferManagementService offerManagementService;
     private final KafkaProducer kafkaProducer;
+    private final RemovalDistributionService removalDistributionService;
 
     @Getter
     private int serverCount;
@@ -40,18 +41,28 @@ public class ServersStatementRepository {
 
         if (aliveServersPingCount.values().stream().anyMatch(value -> value >= PING_COUNT_TO_CONFIRM)){
             log.info("Servers count: {}", aliveServersPingCount.size());
+            serverCount = aliveServersPingCount.size();
 
+            //TODO delete
             if (aliveServersPingCount.size() != serverCount) {
-                serverCount = aliveServersPingCount.size();
                 log.info("New server! Count: {}", serverCount);
-                if (serverCount == 1 && kafkaProducer.serverId.equals("1")){
-                    log.info("({}) server process all currencies!", kafkaProducer.serverId);
-                    currencyService.processAllCurrencies();
-                }
+            }
+
+            if (serverCount == 1 && kafkaProducer.getServerId().equals("1")){
+                log.info("({}) server process all currencies!", kafkaProducer.getServerId());
+                currencyService.processAllCurrencies();
+            }
+
+            if (aliveServersPingCount.size() < serverCount){
+                removalDistributionService.setServerWasDeleted(true);
             }
 
             if (isLackOfCurrency()) {
                 offerManagementService.offerRequest();
+            }
+
+            if (removalDistributionService.isServerWasDeleted()){
+                removalDistributionService.sendServerState();
             }
 
             aliveServersPingCount.clear();
