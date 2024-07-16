@@ -1,23 +1,23 @@
 package sc.server.distribution.kafka;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.stereotype.Service;
-import sc.server.distribution.repositories.ServersStatementRepository;
+import sc.server.distribution.repositories.ServerStatementRepository;
 import sc.server.distribution.services.OfferManagementService;
 import sc.server.distribution.services.RemovalDistributionService;
 
 @Service
 @RequiredArgsConstructor
-@KafkaListener(topics = "core-balancer", id = "1")
 public class KafkaConsumer {
 
-    private final ServersStatementRepository serversStatementRepository;
+    private final ServerStatementRepository serversStatementRepository;
     private final OfferManagementService offerManagementService;
     private final RemovalDistributionService removalDistributionService;
 
-    @KafkaHandler
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "core-balancer",
+            partitions = "#{@finder.partitions('core-balancer')}"))
     public void listen(String message){
         if (message.contains("ping")){
             serversStatementRepository.addServer(message);
@@ -30,10 +30,10 @@ public class KafkaConsumer {
             offerManagementService.confirmOffer(message);
         }
         else if (message.contains("state")){
-            removalDistributionService.processState(message);
+            removalDistributionService.processState(message, serversStatementRepository.getServerCount());
         }
         else if (message.contains("take")){
-            //TODO end here
+            removalDistributionService.takeCurrency(message);
         }
     }
 }

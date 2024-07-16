@@ -14,7 +14,7 @@ import java.util.HashMap;
 @Repository
 @Slf4j
 @RequiredArgsConstructor
-public class ServersStatementRepository {
+public class ServerStatementRepository {
 
     private final int PING_COUNT_TO_CONFIRM = 5;
 
@@ -25,7 +25,7 @@ public class ServersStatementRepository {
     private final RemovalDistributionService removalDistributionService;
 
     @Getter
-    private int serverCount;
+    private int serverCount = 1;
     private HashMap<String, Integer> aliveServersPingCount = new HashMap<>();
 
     public void addServer(String pingMessage){
@@ -41,7 +41,6 @@ public class ServersStatementRepository {
 
         if (aliveServersPingCount.values().stream().anyMatch(value -> value >= PING_COUNT_TO_CONFIRM)){
             log.info("Servers count: {}", aliveServersPingCount.size());
-            serverCount = aliveServersPingCount.size();
 
             //TODO delete
             if (aliveServersPingCount.size() != serverCount) {
@@ -57,13 +56,16 @@ public class ServersStatementRepository {
                 removalDistributionService.setServerWasDeleted(true);
             }
 
-            if (isLackOfCurrency()) {
-                offerManagementService.offerRequest();
-            }
+            serverCount = aliveServersPingCount.size();
 
             if (removalDistributionService.isServerWasDeleted()){
                 removalDistributionService.sendServerState();
             }
+            else if (isLackOfCurrency()) {
+                offerManagementService.offerRequest();
+            }
+
+
 
             aliveServersPingCount.clear();
         }

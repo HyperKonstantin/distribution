@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import sc.server.distribution.entities.Currency;
 import sc.server.distribution.kafka.KafkaProducer;
 import sc.server.distribution.repositories.CurrencyRepository;
-import sc.server.distribution.repositories.ServersStatementRepository;
 
 import java.util.*;
 import static org.apache.commons.lang3.RandomUtils.nextInt;
@@ -27,34 +26,32 @@ public class RemovalDistributionService {
     private final KafkaProducer kafkaProducer;
     private final CurrencyService currencyService;
     private final CurrencyRepository currencyRepository;
-    private final ServersStatementRepository serversStatementRepository;
 
     public void sendServerState() {
         List<String> processedCurrencyNames = currencyService.getProcessedCurrency().stream().map(Currency::getName).toList();
-        log.info("({}} state sent: {}", kafkaProducer.getServerId(), processedCurrencyNames);
+        log.info("({}) state sent: {}", kafkaProducer.getServerId(), processedCurrencyNames);
         kafkaProducer.sendState(String.join(" ", processedCurrencyNames));
     }
 
-    public void processState(String message) {
+    public void processState(String message, int serverCount) {
         String stateSender = message.split(" ")[1];
         List<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).toList();
         sentStateServers.put(stateSender, senderProcessedCurrencyNames);
 
-        if (sentStateServers.size() != serversStatementRepository.getServerCount()) {
+        if (sentStateServers.size() != serverCount) {
             return;
         }
 
         if (getUnprocessedCurrencies().isEmpty()) {
-            log.info("({}) Currency distributed!");
+            log.info("({}) Currency distributed!", kafkaProducer.getServerId());
             serverWasDeleted = false;
         }
         else{
-            log.info("({}) Send take request!");
+            log.info("({}) Send take request!", kafkaProducer.getServerId());
             SendTakeRequest();
         }
 
         sentStateServers.clear();
-
     }
 
     private void SendTakeRequest() {
@@ -71,5 +68,9 @@ public class RemovalDistributionService {
                 .filter(currency -> !allServersProcessedCurrencies.contains(currency))
                 .toList();
         return unprocessedCurrencies;
+    }
+
+    public void takeCurrency(String message) {
+        log.info("({}) take query got: {}", kafkaProducer.getServerId(), message);
     }
 }

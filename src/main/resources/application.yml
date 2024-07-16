@@ -4,11 +4,12 @@ server:
 spring:
 
   kafka:
-
     bootstrap-servers: localhost:9092
     consumer:
       auto-offset-reset: latest
-
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual
 
 values:
   server-id: 0
