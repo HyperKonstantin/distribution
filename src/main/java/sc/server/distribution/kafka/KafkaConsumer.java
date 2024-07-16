@@ -35,5 +35,8 @@ public class KafkaConsumer {
         else if (message.contains("take")){
             removalDistributionService.takeCurrency(message);
         }
+        else if (message.contains("overflow")){
+            //TODO add overflow logic
+        }
     }
 }

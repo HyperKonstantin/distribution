@@ -22,6 +22,7 @@ public class RemovalDistributionService {
     private boolean serverWasDeleted;
 
     private HashMap<String, List<String>> sentStateServers = new HashMap<>();
+    private String takedRequestCurrency = null;
 
     private final KafkaProducer kafkaProducer;
     private final CurrencyService currencyService;
@@ -46,8 +47,7 @@ public class RemovalDistributionService {
             log.info("({}) Currency distributed!", kafkaProducer.getServerId());
             serverWasDeleted = false;
         }
-        else{
-            log.info("({}) Send take request!", kafkaProducer.getServerId());
+        else {
             SendTakeRequest();
         }
 
@@ -55,22 +55,43 @@ public class RemovalDistributionService {
     }
 
     private void SendTakeRequest() {
+        //TODO add currency count check
+
         int takenCurrencyIndex = nextInt(0, getUnprocessedCurrencies().size());
-        kafkaProducer.takeRequest(getUnprocessedCurrencies().get(takenCurrencyIndex));
+        takedRequestCurrency = getUnprocessedCurrencies().get(takenCurrencyIndex);
+        kafkaProducer.takeRequest(takedRequestCurrency);
+
+        log.info("({}) Send take request on {}", kafkaProducer.getServerId(), takedRequestCurrency);
+
     }
 
     private List<String> getUnprocessedCurrencies(){
         List<String> allServersProcessedCurrencies = sentStateServers.values().stream()
                 .flatMap(List::stream)
                 .toList();
+
         List<String> unprocessedCurrencies = currencyRepository.findAll().stream()
                 .map(Currency::getName)
                 .filter(currency -> !allServersProcessedCurrencies.contains(currency))
                 .toList();
+
         return unprocessedCurrencies;
     }
 
     public void takeCurrency(String message) {
         log.info("({}) take query got: {}", kafkaProducer.getServerId(), message);
+        String senderId = message.split(" ")[1];
+        String currencyName = message.split(" ")[2];
+
+
+        if (kafkaProducer.getServerId().equals(senderId) && takedRequestCurrency != null){
+            currencyService.addCurrency(currencyName);
+
+            log.info("({}) take currency: {}", kafkaProducer.getServerId(), currencyName);
+        }
+        else if (takedRequestCurrency != null && takedRequestCurrency.equals(currencyName)){
+            log.info("({}) take request was intercepted by {}", kafkaProducer.getServerId(), senderId);
+            takedRequestCurrency = null;
+        }
     }
 }

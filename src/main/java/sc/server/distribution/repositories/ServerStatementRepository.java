@@ -42,11 +42,6 @@ public class ServerStatementRepository {
         if (aliveServersPingCount.values().stream().anyMatch(value -> value >= PING_COUNT_TO_CONFIRM)){
             log.info("Servers count: {}", aliveServersPingCount.size());
 
-            //TODO delete
-            if (aliveServersPingCount.size() != serverCount) {
-                log.info("New server! Count: {}", serverCount);
-            }
-
             if (serverCount == 1 && kafkaProducer.getServerId().equals("1")){
                 log.info("({}) server process all currencies!", kafkaProducer.getServerId());
                 currencyService.processAllCurrencies();
@@ -64,8 +59,9 @@ public class ServerStatementRepository {
             else if (isLackOfCurrency()) {
                 offerManagementService.offerRequest();
             }
-
-
+            else if (isExcessOfCurrency()) {
+                //TODO sending overflow message
+            }
 
             aliveServersPingCount.clear();
         }

@@ -19,10 +19,10 @@ public class OfferManagementService {
     private OfferStatus offerStatus = OfferStatus.none;
 
     public void offerRequest() {
-//        if (offerStatus == OfferStatus.waited){
-//            log.warn("({}) query is already sent", kafkaProducer.serverId);
-//            return;
-//        }
+        if (offerStatus == OfferStatus.waited){
+            log.warn("({}) query is already sent", kafkaProducer.getServerId());
+            return;
+        }
         log.info("send query");
         kafkaProducer.currencyQuery();
         offerStatus = OfferStatus.waited;

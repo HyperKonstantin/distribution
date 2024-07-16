@@ -1,10 +1,10 @@
 server:
-  port : 8082
+  port : 8084
 
 spring:
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: 0.0.0.0:29092
     consumer:
       auto-offset-reset: latest
       enable-auto-commit: false
