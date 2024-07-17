@@ -40,4 +40,8 @@ public class KafkaProducer {
     public void takeRequest(String currencyName) {
         kafkaTemplate.send(TOPIC, "take " + serverId + " " + currencyName);
     }
+
+    public void OverflowMessage() {
+        kafkaTemplate.send(TOPIC, "overflow");
+    }
 }

@@ -55,8 +55,6 @@ public class RemovalDistributionService {
     }
 
     private void SendTakeRequest() {
-        //TODO add currency count check
-
         int takenCurrencyIndex = nextInt(0, getUnprocessedCurrencies().size());
         takedRequestCurrency = getUnprocessedCurrencies().get(takenCurrencyIndex);
         kafkaProducer.takeRequest(takedRequestCurrency);

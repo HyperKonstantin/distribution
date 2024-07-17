@@ -60,7 +60,7 @@ public class ServerStatementRepository {
                 offerManagementService.offerRequest();
             }
             else if (isExcessOfCurrency()) {
-                //TODO sending overflow message
+                offerManagementService.sendOverflowMessage();
             }
 
             aliveServersPingCount.clear();
@@ -71,8 +71,13 @@ public class ServerStatementRepository {
         return currencyService.getProcessedCurrency().size() < currencyPerServer();
     }
 
-    public boolean isExcessOfCurrency(){
+    public boolean isFullnessOrExcessOfCurrency(){
         return currencyService.getProcessedCurrency().size() > currencyPerServer();
+
+    }
+
+    public boolean isExcessOfCurrency(){
+        return currencyService.getProcessedCurrency().size() > currencyPerServer() + 1;
     }
 
     public int currencyPerServer(){

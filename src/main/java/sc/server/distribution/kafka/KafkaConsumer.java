@@ -22,7 +22,7 @@ public class KafkaConsumer {
         if (message.contains("ping")){
             serversStatementRepository.addServer(message);
         }
-        else if (message.contains("query") && serversStatementRepository.isExcessOfCurrency()){
+        else if (message.contains("query") && serversStatementRepository.isFullnessOrExcessOfCurrency()){
             String querySentServerId = message.split(" ")[1];
             offerManagementService.sendOfferOnQueryFrom(querySentServerId);
         }
@@ -36,7 +36,7 @@ public class KafkaConsumer {
             removalDistributionService.takeCurrency(message);
         }
         else if (message.contains("overflow")){
-            //TODO add overflow logic
+            offerManagementService.forcedQuery(serversStatementRepository.currencyPerServer());
         }
     }
 }
