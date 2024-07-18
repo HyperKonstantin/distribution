@@ -22,7 +22,7 @@ public class RemovalDistributionService {
     private boolean serverWasDeleted;
 
     private HashMap<String, List<String>> sentStateServers = new HashMap<>();
-    private String takedRequestCurrency = null;
+    private String takenRequestCurrency = null;
 
     private final KafkaProducer kafkaProducer;
     private final CurrencyService currencyService;
@@ -56,10 +56,10 @@ public class RemovalDistributionService {
 
     private void SendTakeRequest() {
         int takenCurrencyIndex = nextInt(0, getUnprocessedCurrencies().size());
-        takedRequestCurrency = getUnprocessedCurrencies().get(takenCurrencyIndex);
-        kafkaProducer.takeRequest(takedRequestCurrency);
+        takenRequestCurrency = getUnprocessedCurrencies().get(takenCurrencyIndex);
+        kafkaProducer.takeRequest(takenRequestCurrency);
 
-        log.info("({}) Send take request on {}", kafkaProducer.getServerId(), takedRequestCurrency);
+        log.info("({}) Send take request on {}", kafkaProducer.getServerId(), takenRequestCurrency);
 
     }
 
@@ -82,14 +82,14 @@ public class RemovalDistributionService {
         String currencyName = message.split(" ")[2];
 
 
-        if (kafkaProducer.getServerId().equals(senderId) && takedRequestCurrency != null){
+        if (kafkaProducer.getServerId().equals(senderId) && takenRequestCurrency != null){
             currencyService.addCurrency(currencyName);
 
             log.info("({}) take currency: {}", kafkaProducer.getServerId(), currencyName);
         }
-        else if (takedRequestCurrency != null && takedRequestCurrency.equals(currencyName)){
+        else if (takenRequestCurrency != null && takenRequestCurrency.equals(currencyName)){
             log.info("({}) take request was intercepted by {}", kafkaProducer.getServerId(), senderId);
-            takedRequestCurrency = null;
+            takenRequestCurrency = null;
         }
     }
 }

@@ -9,7 +9,9 @@ import sc.server.distribution.services.CurrencyService;
 import sc.server.distribution.services.OfferManagementService;
 import sc.server.distribution.services.RemovalDistributionService;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @Repository
 @Slf4j
@@ -25,47 +27,46 @@ public class ServerStatementRepository {
     private final RemovalDistributionService removalDistributionService;
 
     @Getter
-    private int serverCount = 1;
-    private HashMap<String, Integer> aliveServersPingCount = new HashMap<>();
+    private int serverCount = 0;
 
-    public void addServer(String pingMessage){
+    //TODO maybe change on Set
+    private List<String> activeServersId = new ArrayList<>();
 
-        if (aliveServersPingCount.containsKey(pingMessage)){
-            aliveServersPingCount.compute(pingMessage, (k, pingCount) -> pingCount + 1);
+    public void checkServers(String pingMessage){
+        String pingedServerId = pingMessage.split(" ")[1];
+
+        activeServersId.add(pingedServerId);
+
+        if (!pingedServerId.equals(kafkaProducer.getServerId())){
+            return;
         }
-        else{
-            aliveServersPingCount.put(pingMessage, 1);
+
+        log.info("Servers count: {}", activeServersId.size());
+
+        if (activeServersId.size() != serverCount && activeServersId.size() == 1){
+            log.info("({}) server process all currencies!", kafkaProducer.getServerId());
+            currencyService.processAllCurrencies();
         }
 
-        log.info(aliveServersPingCount.toString());
-
-        if (aliveServersPingCount.values().stream().anyMatch(value -> value >= PING_COUNT_TO_CONFIRM)){
-            log.info("Servers count: {}", aliveServersPingCount.size());
-
-            if (serverCount == 1 && kafkaProducer.getServerId().equals("1")){
-                log.info("({}) server process all currencies!", kafkaProducer.getServerId());
-                currencyService.processAllCurrencies();
-            }
-
-            if (aliveServersPingCount.size() < serverCount){
-                removalDistributionService.setServerWasDeleted(true);
-            }
-
-            serverCount = aliveServersPingCount.size();
-
-            if (removalDistributionService.isServerWasDeleted()){
-                removalDistributionService.sendServerState();
-            }
-            else if (isLackOfCurrency()) {
-                offerManagementService.offerRequest();
-            }
-            else if (isExcessOfCurrency()) {
-                offerManagementService.sendOverflowMessage();
-            }
-
-            aliveServersPingCount.clear();
+        if (activeServersId.size() < serverCount){
+            removalDistributionService.setServerWasDeleted(true);
         }
+
+        serverCount = activeServersId.size();
+
+        if (removalDistributionService.isServerWasDeleted()){
+            removalDistributionService.sendServerState();
+        }
+        else if (isLackOfCurrency()) {
+            offerManagementService.offerRequest();
+        }
+        else if (isExcessOfCurrency()) {
+            offerManagementService.sendOverflowMessage();
+        }
+
+        activeServersId.clear();
     }
+
 
     public boolean isLackOfCurrency(){
         return currencyService.getProcessedCurrency().size() < currencyPerServer();

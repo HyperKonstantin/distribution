@@ -20,7 +20,7 @@ public class KafkaConsumer {
             partitions = "#{@finder.partitions('core-balancer')}"))
     public void listen(String message){
         if (message.contains("ping")){
-            serversStatementRepository.addServer(message);
+            serversStatementRepository.checkServers(message);
         }
         else if (message.contains("query") && serversStatementRepository.isFullnessOrExcessOfCurrency()){
             String querySentServerId = message.split(" ")[1];
