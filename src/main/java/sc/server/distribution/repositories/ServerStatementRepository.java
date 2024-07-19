@@ -9,16 +9,14 @@ import sc.server.distribution.services.CurrencyService;
 import sc.server.distribution.services.OfferManagementService;
 import sc.server.distribution.services.RemovalDistributionService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Repository
 @Slf4j
 @RequiredArgsConstructor
 public class ServerStatementRepository {
 
-    private final int PING_COUNT_TO_CONFIRM = 5;
+    private final int PING_COUNT_TO_CONFIRM = 3;
 
     private final CurrencyService currencyService;
     private final CurrencyRepository currencyRepository;
@@ -27,32 +25,35 @@ public class ServerStatementRepository {
     private final RemovalDistributionService removalDistributionService;
 
     @Getter
-    private int serverCount = 0;
+    private int serverCount = 1;
 
-    //TODO maybe change on Set
-    private List<String> activeServersId = new ArrayList<>();
+    private HashMap<String, Integer> aliveServersPingCount = new HashMap<>();
 
     public void checkServers(String pingMessage){
-        String pingedServerId = pingMessage.split(" ")[1];
 
-        activeServersId.add(pingedServerId);
+        if (aliveServersPingCount.containsKey(pingMessage)){
+            aliveServersPingCount.compute(pingMessage, (k, pingCount) -> pingCount + 1);
+        }
+        else{
+            aliveServersPingCount.put(pingMessage, 1);
+        }
 
-        if (!pingedServerId.equals(kafkaProducer.getServerId())){
+        if (aliveServersPingCount.values().stream().allMatch(value -> value < PING_COUNT_TO_CONFIRM)){
             return;
         }
 
-        log.info("Servers count: {}", activeServersId.size());
+        log.info("Servers count: {}", aliveServersPingCount.size());
 
-        if (activeServersId.size() != serverCount && activeServersId.size() == 1){
+        if (serverCount == 1 && kafkaProducer.getServerId().equals("1")){
             log.info("({}) server process all currencies!", kafkaProducer.getServerId());
             currencyService.processAllCurrencies();
         }
 
-        if (activeServersId.size() < serverCount){
+        if (aliveServersPingCount.size() < serverCount){
             removalDistributionService.setServerWasDeleted(true);
         }
 
-        serverCount = activeServersId.size();
+        serverCount = aliveServersPingCount.size();
 
         if (removalDistributionService.isServerWasDeleted()){
             removalDistributionService.sendServerState();
@@ -64,7 +65,7 @@ public class ServerStatementRepository {
             offerManagementService.sendOverflowMessage();
         }
 
-        activeServersId.clear();
+        aliveServersPingCount.clear();
     }
 
 

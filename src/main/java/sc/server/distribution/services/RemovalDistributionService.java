@@ -10,6 +10,8 @@ import sc.server.distribution.kafka.KafkaProducer;
 import sc.server.distribution.repositories.CurrencyRepository;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 import static org.apache.commons.lang3.RandomUtils.nextInt;
 
 @Service
@@ -21,7 +23,7 @@ public class RemovalDistributionService {
     @Getter
     private boolean serverWasDeleted;
 
-    private HashMap<String, List<String>> sentStateServers = new HashMap<>();
+    private HashMap<String, Set<String>> sentStateServers = new HashMap<>();
     private String takenRequestCurrency = null;
 
     private final KafkaProducer kafkaProducer;
@@ -36,22 +38,22 @@ public class RemovalDistributionService {
 
     public void processState(String message, int serverCount) {
         String stateSender = message.split(" ")[1];
-        List<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).toList();
+        Set<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).collect(Collectors.toSet());
         sentStateServers.put(stateSender, senderProcessedCurrencyNames);
 
         if (sentStateServers.size() != serverCount) {
             return;
         }
 
+        log.info("unprocessed currency {}", getUnprocessedCurrencies());
         if (getUnprocessedCurrencies().isEmpty()) {
             log.info("({}) Currency distributed!", kafkaProducer.getServerId());
             serverWasDeleted = false;
         }
         else {
             SendTakeRequest();
+            sentStateServers.clear();
         }
-
-        sentStateServers.clear();
     }
 
     private void SendTakeRequest() {
@@ -65,7 +67,7 @@ public class RemovalDistributionService {
 
     private List<String> getUnprocessedCurrencies(){
         List<String> allServersProcessedCurrencies = sentStateServers.values().stream()
-                .flatMap(List::stream)
+                .flatMap(Set::stream)
                 .toList();
 
         List<String> unprocessedCurrencies = currencyRepository.findAll().stream()
@@ -81,7 +83,6 @@ public class RemovalDistributionService {
         String senderId = message.split(" ")[1];
         String currencyName = message.split(" ")[2];
 
-
         if (kafkaProducer.getServerId().equals(senderId) && takenRequestCurrency != null){
             currencyService.addCurrency(currencyName);
 
@@ -91,5 +92,10 @@ public class RemovalDistributionService {
             log.info("({}) take request was intercepted by {}", kafkaProducer.getServerId(), senderId);
             takenRequestCurrency = null;
         }
+
+        Set<String> senderState = sentStateServers.get(kafkaProducer.getServerId());
+        senderState.add(currencyName);
+        sentStateServers.put(senderId, senderState);
+        log.info("Other States: {}", sentStateServers);
     }
 }
