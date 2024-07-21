@@ -10,7 +10,6 @@ import sc.server.distribution.kafka.KafkaProducer;
 import sc.server.distribution.repositories.CurrencyRepository;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.RandomUtils.nextInt;
 
@@ -23,7 +22,8 @@ public class RemovalDistributionService {
     @Getter
     private boolean serverWasDeleted;
 
-    private HashMap<String, Set<String>> sentStateServers = new HashMap<>();
+    private HashMap<String, List<String>> sentStateServers = new HashMap<>();
+    private List<String> tookCurrency = new ArrayList<>();
     private String takenRequestCurrency = null;
 
     private final KafkaProducer kafkaProducer;
@@ -37,8 +37,9 @@ public class RemovalDistributionService {
     }
 
     public void processState(String message, int serverCount) {
+        log.info("get state: {}", message);
         String stateSender = message.split(" ")[1];
-        Set<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).collect(Collectors.toSet());
+        List<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).toList();
         sentStateServers.put(stateSender, senderProcessedCurrencyNames);
 
         if (sentStateServers.size() != serverCount) {
@@ -49,11 +50,14 @@ public class RemovalDistributionService {
         if (getUnprocessedCurrencies().isEmpty()) {
             log.info("({}) Currency distributed!", kafkaProducer.getServerId());
             serverWasDeleted = false;
+            tookCurrency.clear();
         }
         else {
             SendTakeRequest();
-            sentStateServers.clear();
         }
+
+        sentStateServers.clear();
+        tookCurrency.clear();
     }
 
     private void SendTakeRequest() {
@@ -67,12 +71,13 @@ public class RemovalDistributionService {
 
     private List<String> getUnprocessedCurrencies(){
         List<String> allServersProcessedCurrencies = sentStateServers.values().stream()
-                .flatMap(Set::stream)
+                .flatMap(List::stream)
                 .toList();
 
         List<String> unprocessedCurrencies = currencyRepository.findAll().stream()
                 .map(Currency::getName)
                 .filter(currency -> !allServersProcessedCurrencies.contains(currency))
+                .filter(currency -> !tookCurrency.contains((currency)))
                 .toList();
 
         return unprocessedCurrencies;
@@ -93,9 +98,6 @@ public class RemovalDistributionService {
             takenRequestCurrency = null;
         }
 
-        Set<String> senderState = sentStateServers.get(kafkaProducer.getServerId());
-        senderState.add(currencyName);
-        sentStateServers.put(senderId, senderState);
-        log.info("Other States: {}", sentStateServers);
+        tookCurrency.add(currencyName);
     }
 }
