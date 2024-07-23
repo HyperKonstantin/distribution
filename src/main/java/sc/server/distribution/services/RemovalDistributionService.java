@@ -18,7 +18,6 @@ import static org.apache.commons.lang3.RandomUtils.nextInt;
 @RequiredArgsConstructor
 public class RemovalDistributionService {
 
-    @Setter
     @Getter
     private boolean serverWasDeleted;
 
@@ -49,10 +48,11 @@ public class RemovalDistributionService {
         log.info("unprocessed currency {}", getUnprocessedCurrencies());
         if (getUnprocessedCurrencies().isEmpty()) {
             log.info("({}) Currency distributed!", kafkaProducer.getServerId());
+            sendServerState();
             serverWasDeleted = false;
             tookCurrency.clear();
         }
-        else {
+        else if (serverWasDeleted){
             SendTakeRequest();
         }
 
@@ -66,7 +66,6 @@ public class RemovalDistributionService {
         kafkaProducer.takeRequest(takenRequestCurrency);
 
         log.info("({}) Send take request on {}", kafkaProducer.getServerId(), takenRequestCurrency);
-
     }
 
     private List<String> getUnprocessedCurrencies(){
@@ -99,5 +98,11 @@ public class RemovalDistributionService {
         }
 
         tookCurrency.add(currencyName);
+    }
+
+    public void setServerWasDeleted(){
+        serverWasDeleted = true;
+        sentStateServers.clear();
+        tookCurrency.clear();
     }
 }

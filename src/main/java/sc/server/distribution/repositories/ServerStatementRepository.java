@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import sc.server.distribution.kafka.KafkaProducer;
 import sc.server.distribution.services.CurrencyService;
 import sc.server.distribution.services.OfferManagementService;
 import sc.server.distribution.services.RemovalDistributionService;
@@ -21,7 +20,6 @@ public class ServerStatementRepository {
     private final CurrencyService currencyService;
     private final CurrencyRepository currencyRepository;
     private final OfferManagementService offerManagementService;
-    private final KafkaProducer kafkaProducer;
     private final RemovalDistributionService removalDistributionService;
 
     @Getter
@@ -42,18 +40,17 @@ public class ServerStatementRepository {
             return;
         }
 
-        log.info("Servers count: {}", aliveServersPingCount.size());
+        log.info("Servers count: {}", serverCount);
 
-        if (serverCount == 1 && kafkaProducer.getServerId().equals("1")){
-            log.info("({}) server process all currencies!", kafkaProducer.getServerId());
-            currencyService.processAllCurrencies();
+        //TODO simplify
+        if (aliveServersPingCount.size() < serverCount ||
+                (aliveServersPingCount.size() == 1 && !currencyService.isServerProcessAllCurrencies())){
+            removalDistributionService.setServerWasDeleted();
+            serverCount = aliveServersPingCount.size();
         }
-
-        if (aliveServersPingCount.size() < serverCount){
-            removalDistributionService.setServerWasDeleted(true);
+        else if (!removalDistributionService.isServerWasDeleted()){
+            serverCount = aliveServersPingCount.size();
         }
-
-        serverCount = aliveServersPingCount.size();
 
         if (removalDistributionService.isServerWasDeleted()){
             removalDistributionService.sendServerState();
@@ -67,7 +64,6 @@ public class ServerStatementRepository {
 
         aliveServersPingCount.clear();
     }
-
 
     public boolean isLackOfCurrency(){
         return currencyService.getProcessedCurrency().size() < currencyPerServer();

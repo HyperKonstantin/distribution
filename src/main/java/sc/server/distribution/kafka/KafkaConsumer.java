@@ -22,14 +22,16 @@ public class KafkaConsumer {
         if (message.contains("ping")){
             serversStatementRepository.checkServers(message);
         }
-        else if (message.contains("query") && serversStatementRepository.isFullnessOrExcessOfCurrency()){
+        //TODO move serverStatement to offerManager
+        else if (message.contains("query") && serversStatementRepository.isFullnessOrExcessOfCurrency()
+        && !removalDistributionService.isServerWasDeleted()){
             String querySentServerId = message.split(" ")[1];
             offerManagementService.sendOfferOnQueryFrom(querySentServerId);
         }
         else if (message.contains("offer")){
             offerManagementService.confirmOffer(message);
         }
-        else if (message.contains("state")){
+        else if (message.contains("state") && removalDistributionService.isServerWasDeleted()){
             removalDistributionService.processState(message, serversStatementRepository.getServerCount());
         }
         else if (message.contains("take")){

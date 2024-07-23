@@ -31,9 +31,8 @@ public class CurrencyService {
         return new ResponseEntity<>((new ObjectMapper()).writeValueAsString(currencyNames), HttpStatus.OK);
     }
 
-    public void processAllCurrencies(){
-        processedCurrency.clear();
-        processedCurrency.addAll(currencyRepository.findAll());
+    public boolean isServerProcessAllCurrencies(){
+        return processedCurrency.size() == currencyRepository.findAll().size();
     }
 
     @SneakyThrows

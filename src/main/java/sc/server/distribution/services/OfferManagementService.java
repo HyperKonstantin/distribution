@@ -33,7 +33,7 @@ public class OfferManagementService {
     }
 
     public void forcedQuery(int currencyPerServer) {
-        if (currencyService.getProcessedCurrency().size() == currencyPerServer){
+        if (currencyService.getProcessedCurrency().size() == currencyPerServer && offerStatus != OfferStatus.waited){
             log.info("({}) sending forced query", kafkaProducer.getServerId());
             offerRequest();
         }
