@@ -11,41 +11,22 @@ import sc.server.distribution.repositories.ServerRepository;
 @RequiredArgsConstructor
 public class ActionDistributionService {
 
-    private final int PING_COUNT_TO_CONFIRM = 3;
-
     private final ServerRepository serverRepository;
     private final CurrencyService currencyService;
     private final CurrencyRepository currencyRepository;
     private final ServerAddingService serverAddingService;
     private final ServerRemovalService serverRemovalService;
 
-    public void checkServers(String pingMessage){
+    public void updateServer(String pingMessage){
 
-        var aliveServersPingCount = serverRepository.getAliveServersPingCount();
-        int serverCount = serverRepository.getServerCount();
+        addPingedServer(pingMessage);
 
-        if (aliveServersPingCount.containsKey(pingMessage)){
-            aliveServersPingCount.compute(pingMessage, (k, pingCount) -> pingCount + 1);
-        }
-        else{
-            aliveServersPingCount.put(pingMessage, 1);
-        }
-
-        if (aliveServersPingCount.values().stream().allMatch(value -> value < PING_COUNT_TO_CONFIRM)){
+        if (!serverRepository.isServersPingedEnoughToConfirm()){
             return;
         }
 
-        log.info("Servers count: {}", serverCount);
-
-        //TODO simplify
-        if (aliveServersPingCount.size() < serverCount ||
-                (aliveServersPingCount.size() == 1 && !currencyService.isServerProcessAllCurrencies())){
-            serverRemovalService.setServerWasDeleted();
-            serverRepository.setServerCount(aliveServersPingCount.size());
-        }
-        else if (!serverRemovalService.isServerWasDeleted()){
-            serverRepository.setServerCount(aliveServersPingCount.size());
-        }
+        log.info("Servers count: {}", serverRepository.getServerCount());
+        updateServerCount();
 
         if (serverRemovalService.isServerWasDeleted()){
             serverRemovalService.sendServerState();
@@ -57,7 +38,31 @@ public class ActionDistributionService {
             serverAddingService.sendOverflowMessage();
         }
 
-        aliveServersPingCount.clear();
+        serverRepository.clearPingedServers();
+    }
+
+    private void addPingedServer(String pingMessage){
+        if (serverRepository.isServerPinged(pingMessage)){
+            serverRepository.increasePingCounter(pingMessage);
+        }
+        else{
+            serverRepository.addServer(pingMessage);
+        }
+    }
+
+    private void updateServerCount(){
+        if (serverRepository.pingedServersCount() < serverRepository.getServerCount() || isServerAlone()){
+            serverRemovalService.setServerWasDeleted();
+            serverRepository.setServerCount(serverRepository.pingedServersCount());
+        }
+        else if (!serverRemovalService.isServerWasDeleted()){
+            serverRepository.setServerCount(serverRepository.pingedServersCount());
+        }
+    }
+
+    private boolean isServerAlone(){
+        return serverRepository.getAliveServersPingCount().size() == 1
+                && !currencyService.isServerProcessAllCurrencies();
     }
 
     public boolean isLackOfCurrency(){

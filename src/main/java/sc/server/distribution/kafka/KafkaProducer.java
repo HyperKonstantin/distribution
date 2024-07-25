@@ -18,30 +18,28 @@ public class KafkaProducer {
     @Setter
     @Value("${values.server-id}")
     private String serverId;
-    private final String TOPIC = "core-balancer";
-
 
     public void healthCheck(){
-        kafkaTemplate.send(TOPIC, "ping " + serverId);
+        kafkaTemplate.send("command-ping", "ping " + serverId);
     }
 
     public void currencyQuery(){
-        kafkaTemplate.send(TOPIC, "query " + serverId);
+        kafkaTemplate.send("command-query", "query " + serverId);
     }
 
     public void offerCurrency(Currency currency, String consumerId){
-        kafkaTemplate.send(TOPIC, "offer " + serverId + " " + consumerId + " " + currency.getName());
+        kafkaTemplate.send("command-offer", "offer " + serverId + " " + consumerId + " " + currency.getName());
     }
 
     public void sendState(String allCurrencyString) {
-        kafkaTemplate.send(TOPIC, "state " + serverId + " " + allCurrencyString);
+        kafkaTemplate.send("command-state", "state " + serverId + " " + allCurrencyString);
     }
 
     public void takeRequest(String currencyName) {
-        kafkaTemplate.send(TOPIC, "take " + serverId + " " + currencyName);
+        kafkaTemplate.send("command-take", "take " + serverId + " " + currencyName);
     }
 
     public void OverflowMessage() {
-        kafkaTemplate.send(TOPIC, "overflow");
+        kafkaTemplate.send("command-overflow", "overflow");
     }
 }

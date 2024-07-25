@@ -66,7 +66,7 @@ public class ServerAddingService {
             offerStatus = OfferStatus.none;
 
         }
-        else if (isOfferFailured(message)){
+        else if (isOfferFailed(message)){
          log.info("({}) offer was intercepted", kafkaProducer.getServerId());
          offerStatus = OfferStatus.none;
         }
@@ -82,7 +82,7 @@ public class ServerAddingService {
         return OfferSender(message).equals(kafkaProducer.getServerId()) && offerStatus == OfferStatus.sent;
     }
 
-    private boolean isOfferFailured(String message){
+    private boolean isOfferFailed(String message){
         return !OfferSender(message).equals(kafkaProducer.getServerId()) && offerStatus == OfferStatus.sent;
     }
 

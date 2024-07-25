@@ -37,6 +37,10 @@ public class ServerRemovalService {
     }
 
     public void processState(String message) {
+        if (!serverWasDeleted){
+            return;
+        }
+
         log.info("get state: {}", message);
         String stateSender = message.split(" ")[1];
         List<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).toList();
@@ -48,12 +52,10 @@ public class ServerRemovalService {
 
         log.info("unprocessed currency {}", getUnprocessedCurrencies());
         if (getUnprocessedCurrencies().isEmpty()) {
-            log.info("({}) Currency distributed!", kafkaProducer.getServerId());
-            sendServerState();
-            serverWasDeleted = false;
-            tookCurrency.clear();
+            finishDistribution();
         }
-        else if (serverWasDeleted){
+
+        if (serverWasDeleted){
             SendTakeRequest();
         }
 
@@ -67,6 +69,13 @@ public class ServerRemovalService {
         kafkaProducer.takeRequest(takenRequestCurrency);
 
         log.info("({}) Send take request on {}", kafkaProducer.getServerId(), takenRequestCurrency);
+    }
+
+    private void finishDistribution() {
+        log.info("({}) Currency distributed!", kafkaProducer.getServerId());
+        sendServerState();
+        serverWasDeleted = false;
+        tookCurrency.clear();
     }
 
     private List<String> getUnprocessedCurrencies(){

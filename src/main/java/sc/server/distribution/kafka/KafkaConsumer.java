@@ -18,30 +18,43 @@ public class KafkaConsumer {
     private final ServerAddingService serverAddingService;
     private final ServerRemovalService serverRemovalService;
 
-    @KafkaListener(topicPartitions = @TopicPartition(topic = "core-balancer",
-            partitions = "#{@finder.partitions('core-balancer')}"))
-    public void listen(String message){
-        log.info(message);
-        if (message.contains("ping")){
-            actionDistributionService.checkServers(message);
-        }
-        //TODO move serverStatement to offerManager
-        else if (message.contains("query") && actionDistributionService.isFullnessOrExcessOfCurrency()
-        && !serverRemovalService.isServerWasDeleted()){
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "command-ping",
+            partitions = "#{@finder.partitions('command-ping')}"))
+    public void pingListen(String message) {
+        actionDistributionService.updateServer(message);
+    }
+
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "command-query",
+            partitions = "#{@finder.partitions('command-query')}"))
+    public void queryListen(String message) {
+        if (actionDistributionService.isFullnessOrExcessOfCurrency()
+                && !serverRemovalService.isServerWasDeleted()){
             String querySentServerId = message.split(" ")[1];
             serverAddingService.sendOfferOnQueryFrom(querySentServerId);
         }
-        else if (message.contains("offer")){
-            serverAddingService.confirmOffer(message);
-        }
-        else if (message.contains("state") && serverRemovalService.isServerWasDeleted()){
-            serverRemovalService.processState(message);
-        }
-        else if (message.contains("take")){
-            serverRemovalService.takeCurrency(message);
-        }
-        else if (message.contains("overflow")){
-            serverAddingService.forcedQuery(actionDistributionService.currencyPerServer());
-        }
+    }
+
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "command-offer",
+            partitions = "#{@finder.partitions('command-offer')}"))
+    public void offerListen(String message) {
+        serverAddingService.confirmOffer(message);
+    }
+
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "command-state",
+            partitions = "#{@finder.partitions('command-state')}"))
+    public void stateListen(String message) {
+        serverRemovalService.processState(message);
+    }
+
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "command-take",
+            partitions = "#{@finder.partitions('command-take')}"))
+    public void takeListen(String message) {
+        serverRemovalService.takeCurrency(message);
+    }
+
+    @KafkaListener(topicPartitions = @TopicPartition(topic = "command-overflow",
+            partitions = "#{@finder.partitions('command-overflow')}"))
+    public void overflowListen(String message) {
+        serverAddingService.forcedQuery(actionDistributionService.currencyPerServer());
     }
 }
