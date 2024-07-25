@@ -11,7 +11,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OfferManagementService {
+public class ServerAddingService {
 
     private final KafkaProducer kafkaProducer;
     private final CurrencyService currencyService;

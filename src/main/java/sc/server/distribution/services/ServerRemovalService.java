@@ -2,12 +2,12 @@ package sc.server.distribution.services;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sc.server.distribution.entities.Currency;
 import sc.server.distribution.kafka.KafkaProducer;
 import sc.server.distribution.repositories.CurrencyRepository;
+import sc.server.distribution.repositories.ServerRepository;
 
 import java.util.*;
 
@@ -16,7 +16,7 @@ import static org.apache.commons.lang3.RandomUtils.nextInt;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class RemovalDistributionService {
+public class ServerRemovalService {
 
     @Getter
     private boolean serverWasDeleted;
@@ -28,6 +28,7 @@ public class RemovalDistributionService {
     private final KafkaProducer kafkaProducer;
     private final CurrencyService currencyService;
     private final CurrencyRepository currencyRepository;
+    private final ServerRepository serverRepository;
 
     public void sendServerState() {
         List<String> processedCurrencyNames = currencyService.getProcessedCurrency().stream().map(Currency::getName).toList();
@@ -35,13 +36,13 @@ public class RemovalDistributionService {
         kafkaProducer.sendState(String.join(" ", processedCurrencyNames));
     }
 
-    public void processState(String message, int serverCount) {
+    public void processState(String message) {
         log.info("get state: {}", message);
         String stateSender = message.split(" ")[1];
         List<String> senderProcessedCurrencyNames = Arrays.stream(message.split(" ")).skip(2).toList();
         sentStateServers.put(stateSender, senderProcessedCurrencyNames);
 
-        if (sentStateServers.size() != serverCount) {
+        if (sentStateServers.size() != serverRepository.getServerCount()) {
             return;
         }
 

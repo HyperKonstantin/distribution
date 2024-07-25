@@ -1,33 +1,28 @@
-package sc.server.distribution.repositories;
+package sc.server.distribution.services;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Repository;
-import sc.server.distribution.services.CurrencyService;
-import sc.server.distribution.services.OfferManagementService;
-import sc.server.distribution.services.RemovalDistributionService;
+import org.springframework.stereotype.Service;
+import sc.server.distribution.repositories.CurrencyRepository;
+import sc.server.distribution.repositories.ServerRepository;
 
-import java.util.*;
-
-@Repository
+@Service
 @Slf4j
 @RequiredArgsConstructor
-public class ServerStatementRepository {
+public class ActionDistributionService {
 
     private final int PING_COUNT_TO_CONFIRM = 3;
 
+    private final ServerRepository serverRepository;
     private final CurrencyService currencyService;
     private final CurrencyRepository currencyRepository;
-    private final OfferManagementService offerManagementService;
-    private final RemovalDistributionService removalDistributionService;
-
-    @Getter
-    private int serverCount = 1;
-
-    private HashMap<String, Integer> aliveServersPingCount = new HashMap<>();
+    private final ServerAddingService serverAddingService;
+    private final ServerRemovalService serverRemovalService;
 
     public void checkServers(String pingMessage){
+
+        var aliveServersPingCount = serverRepository.getAliveServersPingCount();
+        int serverCount = serverRepository.getServerCount();
 
         if (aliveServersPingCount.containsKey(pingMessage)){
             aliveServersPingCount.compute(pingMessage, (k, pingCount) -> pingCount + 1);
@@ -45,21 +40,21 @@ public class ServerStatementRepository {
         //TODO simplify
         if (aliveServersPingCount.size() < serverCount ||
                 (aliveServersPingCount.size() == 1 && !currencyService.isServerProcessAllCurrencies())){
-            removalDistributionService.setServerWasDeleted();
-            serverCount = aliveServersPingCount.size();
+            serverRemovalService.setServerWasDeleted();
+            serverRepository.setServerCount(aliveServersPingCount.size());
         }
-        else if (!removalDistributionService.isServerWasDeleted()){
-            serverCount = aliveServersPingCount.size();
+        else if (!serverRemovalService.isServerWasDeleted()){
+            serverRepository.setServerCount(aliveServersPingCount.size());
         }
 
-        if (removalDistributionService.isServerWasDeleted()){
-            removalDistributionService.sendServerState();
+        if (serverRemovalService.isServerWasDeleted()){
+            serverRemovalService.sendServerState();
         }
         else if (isLackOfCurrency()) {
-            offerManagementService.offerRequest();
+            serverAddingService.offerRequest();
         }
         else if (isExcessOfCurrency()) {
-            offerManagementService.sendOverflowMessage();
+            serverAddingService.sendOverflowMessage();
         }
 
         aliveServersPingCount.clear();
@@ -79,6 +74,6 @@ public class ServerStatementRepository {
     }
 
     public int currencyPerServer(){
-        return currencyRepository.findAll().size() / serverCount;
+        return currencyRepository.findAll().size() / serverRepository.getServerCount();
     }
 }

@@ -11,5 +11,23 @@ spring:
     listener:
       ack-mode: manual
 
+  output:
+    ansi:
+      enabled: DETECT
+
+logging:
+  level:
+    root: INFO
+    sc.server.distribution:
+      services: INFO
+      repositories: INFO
+      kafka.KafkaConsumer: ERROR
+  pattern:
+    console: "%d{HH:mm:ss.SSS} - %msg%n"
+    file: "%d %p %c{1.} [%t] %m%n"
+
+  file.name: app.log
+
+
 values:
   server-id: 0

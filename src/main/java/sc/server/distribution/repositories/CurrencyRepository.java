@@ -22,6 +22,27 @@ public class CurrencyRepository {
         currencies.add((new Currency("TON")));
         currencies.add((new Currency("DOGE")));
         currencies.add((new Currency("ADA")));
+
+//        currencies.add((new Currency("A")));
+//        currencies.add((new Currency("B")));
+//        currencies.add((new Currency("C")));
+//        currencies.add((new Currency("D")));
+//        currencies.add((new Currency("E")));
+//        currencies.add((new Currency("F")));
+//        currencies.add((new Currency("G")));
+//        currencies.add((new Currency("H")));
+//        currencies.add((new Currency("I")));
+//        currencies.add((new Currency("J")));
+//        currencies.add((new Currency("K")));
+//        currencies.add((new Currency("L")));
+//        currencies.add((new Currency("M")));
+//        currencies.add((new Currency("N")));
+//        currencies.add((new Currency("O")));
+//        currencies.add((new Currency("P")));
+//        currencies.add((new Currency("Q")));
+//        currencies.add((new Currency("R")));
+//        currencies.add((new Currency("S")));
+//        currencies.add((new Currency("T")));
     }
     public List<Currency> findAll(){
         return currencies;
